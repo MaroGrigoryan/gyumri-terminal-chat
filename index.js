@@ -6,6 +6,15 @@ const program = require('commander');
 const blessed = require('blessed');
 const contrib = require('blessed-contrib');
 
+// Basic layout for blessed
+const screen = blessed.screen();
+const log = contrib.log(
+      { fg: "green"
+      , label: 'Chat window'
+      , height: "40%"
+      , tags: true
+      , border: {type: "line", fg: "cyan"} });
+screen.append(log);
 
 //Parsing CLI passed arguments
 program
@@ -30,11 +39,11 @@ if(parsedArguments.service == "server") {
   //Start a TCP Server
   net.createServer( sock => {
     // Show socket object ID -> Unique
-    console.log('CONNECTED: ' + sock.remoteAddress +':'+ sock.remotePort);
+    log.log('Connected: ' + sock.remoteAddress +':'+ sock.remotePort);
 
     // Data event handler for this socket
     sock.on('data', data => {
-        console.log('Data ' + sock.remoteAddress + ': ' + data);
+        log.log('Data ' + sock.remoteAddress + ': ' + data);
 
         // Send data back to client socket
         sock.write('Data sent: "' + data + '"');
@@ -43,7 +52,7 @@ if(parsedArguments.service == "server") {
 
     // Add a 'close' event handler to this instance of socket
     sock.on('close', data => {
-        console.log('Closed: ' + sock.remoteAddress +' '+ sock.remotePort);
+        log.log('Closed: ' + sock.remoteAddress +' '+ sock.remotePort);
     });
 
   }).listen(parsedArguments.port, parsedArguments.location);
@@ -58,13 +67,17 @@ if(parsedArguments.service == "server") {
 
   //Event for receiving data from server
   socket.on('data', data => {
-      console.log('Data: ' + data);
+      log.log('Data: ' + data);
       // Close the client socket
       socket.destroy();
   });
 
   // Add a 'close' event handler for the client socket
   socket.on('close', () => {
-      console.log('Connection closed');
+      //Red log
+      log.log("{red-fg}Connection closed{/red-fg}");
   });
 }
+
+//Rendering our UI :)
+screen.render();

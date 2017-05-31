@@ -12,6 +12,7 @@
   "author": "iteratehackerspace@gmail.com",
   "license": "GPL-3.0",
   "dependencies": {
+    "blessed": "^0.1.81",
     "blessed-contrib": "^4.7.5",
     "commander": "^2.9.0",
     "maxmind": "^2.2.0"
