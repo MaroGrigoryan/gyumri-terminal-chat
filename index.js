@@ -7,7 +7,11 @@ const blessed = require('blessed');
 const contrib = require('blessed-contrib');
 
 // Basic layout for blessed
-const screen = blessed.screen();
+
+const screen = blessed.screen({
+  autoPadding: true,
+    smartCSR: true
+});
 const log = contrib.log(
       { fg: "green"
       , label: 'Chat window'
@@ -15,6 +19,13 @@ const log = contrib.log(
       , tags: true
       , border: {type: "line", fg: "cyan"} });
 screen.append(log);
+
+
+
+screen.key(['escape', 'q', 'C-c'], function(ch, key) {
+  return process.exit(0);
+});
+
 
 //Parsing CLI passed arguments
 program
@@ -39,6 +50,7 @@ if(parsedArguments.service == "server") {
   //Start a TCP Server
   net.createServer( sock => {
     // Show socket object ID -> Unique
+
     log.log('Connected: ' + sock.remoteAddress +':'+ sock.remotePort);
 
     // Data event handler for this socket
@@ -55,18 +67,68 @@ if(parsedArguments.service == "server") {
         log.log('Closed: ' + sock.remoteAddress +' '+ sock.remotePort);
     });
 
+    console.log('Connected: ' + sock.remoteAddress +':'+ sock.remotePort);
+
+    // Data event handler for this socket
+    sock.on('data', data => {
+console.log(data.toString());
+
+    });
+
+
   }).listen(parsedArguments.port, parsedArguments.location);
 
 }else{
+
 
   //Connecting to socket
   socket.connect(parsedArguments.port, parsedArguments.location, () => {
       //Send message to socket server
       socket.write('Hey');
+
+
+  const form = blessed.form({
+      parent: log,
+      name: 'form',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+  });
+
+  const input = blessed.textarea({
+      parent: form,
+      name: 'input',
+      inputOnFocus: true,
+      input: true,
+      keys: true,
+      top: 0,
+      left: 0,
+      height: 1,
+      width: '100%',
+      style: {
+          fg: 'white',
+          bg: 'black',
+          focus: {
+              bg: 'red',
+              fg: 'white'
+          }
+      }
+  });
+
+  input.focus();
+  screen.key('i', function() {
+  socket.write(input.getValue());
+  });
+  //Connecting to socket
+  socket.connect(parsedArguments.port, parsedArguments.location, () => {  //Send message to socket server
+
+
   });
 
   //Event for receiving data from server
   socket.on('data', data => {
+
       log.log('Data: ' + data);
       // Close the client socket
       socket.destroy();
@@ -77,7 +139,13 @@ if(parsedArguments.service == "server") {
       //Red log
       log.log("{red-fg}Connection closed{/red-fg}");
   });
-}
+});
+
+
+
+  }
+
+
 
 //Rendering our UI :)
 screen.render();
