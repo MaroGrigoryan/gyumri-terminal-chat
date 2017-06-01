@@ -1,24 +1,17 @@
 'use strict';
-
 const net = require('net');
 const socket = net.Socket();
 const program = require('commander');
 const blessed = require('blessed');
 const contrib = require('blessed-contrib');
-
+let clients = [];
 // Basic layout for blessed
 
 const screen = blessed.screen({
   autoPadding: true,
     smartCSR: true
 });
-const log = contrib.log(
-      { fg: "green"
-      , label: 'Chat window'
-      , height: "40%"
-      , tags: true
-      , border: {type: "line", fg: "cyan"} });
-screen.append(log);
+
 
 
 
@@ -49,30 +42,22 @@ if(parsedArguments.service == "server") {
 
   //Start a TCP Server
   net.createServer( sock => {
-    // Show socket object ID -> Unique
 
-    log.log('Connected: ' + sock.remoteAddress +':'+ sock.remotePort);
+
+clients.push(sock);
+
 
     // Data event handler for this socket
     sock.on('data', data => {
-        log.log('Data ' + sock.remoteAddress + ': ' + data);
+      for(let i of clients){
+        i.write(data.toString());
+      }
 
-        // Send data back to client socket
-        sock.write('Data sent: "' + data + '"');
 
     });
 
-    // Add a 'close' event handler to this instance of socket
     sock.on('close', data => {
-        log.log('Closed: ' + sock.remoteAddress +' '+ sock.remotePort);
-    });
-
-    console.log('Connected: ' + sock.remoteAddress +':'+ sock.remotePort);
-
-    // Data event handler for this socket
-    sock.on('data', data => {
-console.log(data.toString());
-
+sock.write('server is down');
     });
 
 
@@ -80,11 +65,26 @@ console.log(data.toString());
 
 }else{
 
+  const log = contrib.log(
+        { fg: "green"
+        , label: 'Chat window'
+        , height: "20%"
+        , tags: true
+        , border: {type: "line", fg: "cyan"} });
+  screen.append(log);
 
+  const chatlog = contrib.log(
+        { fg: "green"
+        , top: '25%'
+        , label: 'messages'
+        , height: "40%"
+        , tags: true
+        , border: {type: "line", fg: "cyan"} });
+  screen.append(chatlog);
   //Connecting to socket
   socket.connect(parsedArguments.port, parsedArguments.location, () => {
       //Send message to socket server
-      socket.write('Hey');
+
 
 
   const form = blessed.form({
@@ -117,8 +117,9 @@ console.log(data.toString());
   });
 
   input.focus();
-  screen.key('i', function() {
+  input.key('enter', function() {
   socket.write(input.getValue());
+  input.clearValue();
   });
   //Connecting to socket
   socket.connect(parsedArguments.port, parsedArguments.location, () => {  //Send message to socket server
@@ -129,15 +130,14 @@ console.log(data.toString());
   //Event for receiving data from server
   socket.on('data', data => {
 
-      log.log('Data: ' + data);
-      // Close the client socket
-      socket.destroy();
+      chatlog.log('Data: ' + data);
+
   });
 
   // Add a 'close' event handler for the client socket
   socket.on('close', () => {
       //Red log
-      log.log("{red-fg}Connection closed{/red-fg}");
+      chatlog.log("socket closed");
   });
 });
 
