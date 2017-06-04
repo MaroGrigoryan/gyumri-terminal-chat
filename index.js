@@ -116,7 +116,25 @@ sock.write('server is down');
       }
   });
 
-  input.focus();
+
+  const prompt = blessed.Prompt({
+    name: 'prompt',
+    top:'70%',
+    inputOnFocus: true,
+    input: true,
+    keys: true
+  });
+const  nickname = '';
+  screen.append(prompt);
+prompt.focus();
+prompt.input('nickname','',(nickname)=>{
+    //  the most  difficult part
+    //TODO: get  the  input  value  and put it in nickname variable
+input.focus();
+ });
+
+
+
   input.key('enter', function() {
   socket.write(input.getValue());
   input.clearValue();
