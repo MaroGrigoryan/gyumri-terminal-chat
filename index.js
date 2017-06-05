@@ -1,4 +1,4 @@
-'use strict';
+ 'use strict';
 const net = require('net');
 const socket = net.Socket();
 const program = require('commander');
@@ -45,8 +45,6 @@ if(parsedArguments.service == "server") {
 
 
 clients.push(sock);
-
-
     // Data event handler for this socket
     sock.on('data', data => {
       for(let i of clients){
@@ -55,11 +53,6 @@ clients.push(sock);
 
 
     });
-
-    sock.on('close', data => {
-sock.write('server is down');
-    });
-
 
   }).listen(parsedArguments.port, parsedArguments.location);
 
@@ -116,9 +109,30 @@ sock.write('server is down');
       }
   });
 
-  input.focus();
-  input.key('enter', function() {
-  socket.write(input.getValue());
+
+  const prompt = blessed.Prompt({
+    name: 'prompt',
+    top:'70%',
+    inputOnFocus: true,
+    input: true,
+    keys: true
+  });
+let nickname = '';
+  screen.append(prompt);
+prompt.focus();
+prompt.input('nickname','',(err,value)=>{
+    //  the most  difficult part
+    // 8 hours  of suffer
+    //THUG LIFE
+ nickname = value;
+ socket.write(`${nickname}: has just jonied to the chat`);
+    input.focus();
+ });
+
+
+
+  input.key('enter', ()=>{
+  socket.write(`${nickname}: ${input.getValue()}`);
   input.clearValue();
   });
   //Connecting to socket
@@ -128,9 +142,9 @@ sock.write('server is down');
   });
 
   //Event for receiving data from server
-  socket.on('data', data => {
+  socket.on('data', data=>{
 
-      chatlog.log('Data: ' + data);
+      chatlog.log(`${data}`);
 
   });
 
