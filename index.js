@@ -51,6 +51,8 @@ clients.push(sock);
     sock.on('data', data => {
       for(let i of clients){
         i.write(data);
+
+        
       }
     });
 
