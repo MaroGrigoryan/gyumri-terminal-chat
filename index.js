@@ -5,6 +5,8 @@ const program = require('commander');
 const blessed = require('blessed');
 const contrib = require('blessed-contrib');
 let clients = [];
+let nickname = '';
+let nickcolor = '#2300ff';
 // Basic layout for blessed
 
 const screen = blessed.screen({
@@ -48,10 +50,8 @@ clients.push(sock);
     // Data event handler for this socket
     sock.on('data', data => {
       for(let i of clients){
-        i.write(data.toString());
+        i.write(data);
       }
-
-
     });
 
   }).listen(parsedArguments.port, parsedArguments.location);
@@ -72,6 +72,7 @@ clients.push(sock);
         , label: 'messages'
         , height: "40%"
         , tags: true
+        ,track: {bg: 'yellow'}
         , border: {type: "line", fg: "cyan"} });
   screen.append(chatlog);
   //Connecting to socket
@@ -113,26 +114,77 @@ clients.push(sock);
   const prompt = blessed.Prompt({
     name: 'prompt',
     top:'70%',
+    width:'30%',
     inputOnFocus: true,
     input: true,
-    keys: true
+    keys: true,
+    border: {type: "line", fg: "cyan"}
   });
-let nickname = '';
+  const bar = blessed.listbar({
+    bottom: 0,
+    height:'20%',
+    left: 3,
+    right: 3,
+    mouse: true,
+    keys: true,
+    autoCommandKeys: true,
+    border: 'line',
+    vi: true,
+    style: {
+      bg: 'green',
+      item: {
+        bg: 'red',
+        hover: {
+          bg: 'blue'
+        },
+        //focus: {
+        //  bg: 'blue'
+        //}
+      },
+      selected: {
+        bg: 'blue'
+      }
+    },
+    commands: {
+      'red' :{
+        callback: function() {
+          nickcolor='#f72929';
+          bar.hide();
+            input.focus();
+          }
+      },
+      'blue': function() {
+        nickcolor='#2300ff';
+        bar.hide();
+          input.focus();
+      },
+      'green': function() {
+        nickcolor='#e8ff00';
+        bar.hide();
+          input.focus();
+      }
+    }
+  });
+  screen.append(bar);
+  bar.toggle();
   screen.append(prompt);
 prompt.focus();
 prompt.input('nickname','',(err,value)=>{
-    //  the most  difficult part
-    // 8 hours  of suffer
-    //THUG LIFE
- nickname = value;
- socket.write(`${nickname}: has just jonied to the chat`);
-    input.focus();
+//  the most  difficult part
+// 8 hours  of suffer
+//THUG LIFE
+nickname = value;
+bar.show();
+bar.focus();
+ socket.write(JSON.stringify({message:'has joined to chat',nickname,nickcolor}));
  });
 
 
 
+
+
   input.key('enter', ()=>{
-  socket.write(`${nickname}: ${input.getValue()}`);
+  socket.write(JSON.stringify({message:input.getValue(),nickname,nickcolor}));
   input.clearValue();
   });
   //Connecting to socket
@@ -144,15 +196,11 @@ prompt.input('nickname','',(err,value)=>{
   //Event for receiving data from server
   socket.on('data', data=>{
 
-      chatlog.log(`${data}`);
+      chatlog.log(` {${nickcolor}-fg}${JSON.parse(data).nickname}{/} ${JSON.parse(data).message}`);
 
   });
 
-  // Add a 'close' event handler for the client socket
-  socket.on('close', () => {
-      //Red log
-      chatlog.log("socket closed");
-  });
+
 });
 
 
