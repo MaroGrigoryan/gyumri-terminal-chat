@@ -52,7 +52,7 @@ clients.push(sock);
       for(let i of clients){
         i.write(data);
 
-        
+
       }
     });
 
@@ -198,7 +198,7 @@ bar.focus();
   //Event for receiving data from server
   socket.on('data', data=>{
 
-      chatlog.log(` {${nickcolor}-fg}${JSON.parse(data).nickname}{/} ${JSON.parse(data).message}`);
+      chatlog.log(` {${JSON.parse(data).nickcolor}-fg}${JSON.parse(data).nickname}{/} ${JSON.parse(data).message}`);
 
   });
 
