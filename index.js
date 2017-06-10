@@ -5,8 +5,9 @@ const program = require('commander');
 const blessed = require('blessed');
 const contrib = require('blessed-contrib');
 let clients = [];
-let nickname = '';
-let nickcolor = '#2300ff';
+
+
+
 // Basic layout for blessed
 
 const screen = blessed.screen({
@@ -41,32 +42,41 @@ const parsedArguments = {
 
 //TODO: Separate into modules
 if(parsedArguments.service == "server") {
-
   //Start a TCP Server
-  net.createServer( sock => {
+  net.createServer(sock => {
+      clients.push(sock);
+      sock.on('data', data => {
+        if(JSON.parse(data).type==='nickname')
+        {
+          sock.nickname=JSON.parse(data).nickname;
+          sock.nickcolor='#2300ff';
+        }else  if(JSON.parse(data).type==='nickcolor'){
+sock.nickcolor=JSON.parse(data).nickcolor;
+        }
+        clients.forEach(client => {
+          try {
+        if(JSON.parse(data).type!='nickcolor')
+        {
+        client.write(JSON.stringify({message:JSON.parse(data).message,nickname:sock.nickname,nickcolor:sock.nickcolor}));
+        }
+    }catch(err){
 
 
-clients.push(sock);
-    // Data event handler for this socket
-    sock.on('data', data => {
-      for(let i of clients){
-        i.write(data);
-
-
-      }
-    });
+    }
+  });
+  });
 
   }).listen(parsedArguments.port, parsedArguments.location);
 
 }else{
-
+  socket.connect(parsedArguments.port, parsedArguments.location, () => {
   const log = contrib.log(
         { fg: "green"
         , label: 'Chat window'
         , height: "20%"
         , tags: true
         , border: {type: "line", fg: "cyan"} });
-  screen.append(log);
+    screen.append(log);
 
   const chatlog = contrib.log(
         { fg: "green"
@@ -76,13 +86,7 @@ clients.push(sock);
         , tags: true
         ,track: {bg: 'yellow'}
         , border: {type: "line", fg: "cyan"} });
-  screen.append(chatlog);
-  //Connecting to socket
-  socket.connect(parsedArguments.port, parsedArguments.location, () => {
-      //Send message to socket server
-
-
-
+        screen.append(chatlog);
   const form = blessed.form({
       parent: log,
       name: 'form',
@@ -91,7 +95,6 @@ clients.push(sock);
       width: '100%',
       height: '100%',
   });
-
   const input = blessed.textarea({
       parent: form,
       name: 'input',
@@ -111,8 +114,6 @@ clients.push(sock);
           }
       }
   });
-
-
   const prompt = blessed.Prompt({
     name: 'prompt',
     top:'70%',
@@ -150,55 +151,42 @@ clients.push(sock);
     commands: {
       'red' :{
         callback: function() {
-          nickcolor='#f72929';
+          socket.write(JSON.stringify({type:'nickcolor',nickcolor:'#f72929'}));
           bar.hide();
             input.focus();
           }
       },
       'blue': function() {
-        nickcolor='#2300ff';
+        socket.write(JSON.stringify({type:'nickcolor',nickcolor:'#2300ff'}));
         bar.hide();
           input.focus();
       },
       'green': function() {
-        nickcolor='#e8ff00';
+        socket.write(JSON.stringify({type:'nickcolor',nickcolor:'#e8ff00'}));
         bar.hide();
           input.focus();
       }
     }
   });
-  screen.append(bar);
-  bar.toggle();
-  screen.append(prompt);
+screen.append(bar);
+bar.toggle();
+screen.append(prompt);
 prompt.focus();
 prompt.input('nickname','',(err,value)=>{
-//  the most  difficult part
-// 8 hours  of suffer
-//THUG LIFE
-nickname = value;
 bar.show();
 bar.focus();
- socket.write(JSON.stringify({message:'has joined to chat',nickname,nickcolor}));
- });
+socket.write(JSON.stringify({type:'nickname',message:'has joined to chat',nickname:value,nickcolor:'#2300ff'}));
+});
 
 
-
-
-
-  input.key('enter', ()=>{
-  socket.write(JSON.stringify({message:input.getValue(),nickname,nickcolor}));
+input.key('enter', ()=>{
+  socket.write(JSON.stringify({message:input.getValue()}));
   input.clearValue();
   });
-  //Connecting to socket
-  socket.connect(parsedArguments.port, parsedArguments.location, () => {  //Send message to socket server
 
-
-  });
-
-  //Event for receiving data from server
-  socket.on('data', data=>{
-
-      chatlog.log(` {${JSON.parse(data).nickcolor}-fg}${JSON.parse(data).nickname}{/} ${JSON.parse(data).message}`);
+socket.on('data', data=>{
+  const {nickcolor,nickname,message}= JSON.parse(data);
+  chatlog.log(` {${nickcolor}-fg}${nickname}{/} ${message}`);
 
   });
 
